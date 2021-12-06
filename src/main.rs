@@ -4,6 +4,7 @@ pub mod day1;
 pub mod day2;
 pub mod day3;
 pub mod day4;
+pub mod day5;
 
 pub trait AdventOfCode {
     fn run(&mut self, base_dir: &PathBuf);
@@ -23,6 +24,7 @@ fn main() {
         Box::new(day2::Data::default()),
         Box::new(day3::Data::default()),
         Box::new(day4::Data::default()),
+        Box::new(day5::Data::default()),
     ];
 
     for mut day in days {
