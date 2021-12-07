@@ -5,6 +5,8 @@ pub mod day2;
 pub mod day3;
 pub mod day4;
 pub mod day5;
+pub mod day6;
+pub mod day7;
 
 pub trait AdventOfCode {
     fn run(&mut self, base_dir: &PathBuf);
@@ -16,7 +18,6 @@ fn main() {
     let base_dir: PathBuf = env::current_dir()
         .expect("failed to get current dir")
         .join("input/2021");
-    // println!("{}", &base_dir.to_string_lossy());
 
     // setup days
     let days: Vec<Box<dyn AdventOfCode>> = vec![
@@ -25,16 +26,11 @@ fn main() {
         Box::new(day3::Data::default()),
         Box::new(day4::Data::default()),
         Box::new(day5::Data::default()),
+        Box::new(day6::Data::default()),
+        Box::new(day7::Data::default()),
     ];
 
     for mut day in days {
         day.run(&base_dir);
     }
 }
-
-// use aoc_runner_derive;
-// use aoc_runner;
-
-// use aoc_runner_derive::aoc_main;
-
-// aoc_main! { lib = advent_of_code_2015 }
