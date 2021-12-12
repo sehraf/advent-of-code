@@ -16,7 +16,7 @@ impl AdventOfCode for Data {
     fn run(&mut self, base_dir: &PathBuf) {
         self.load(base_dir, String::from(DAY) + ".txt");
         println!("{}, puzzle 1: {}", DAY, self.puzzle1());
-        
+
         self.load(base_dir, String::from(DAY) + ".txt");
         println!("{}, puzzle 2: {}", DAY, self.puzzle2());
     }
