@@ -12,6 +12,7 @@ mod day6;
 mod day7;
 mod day8;
 mod day9;
+mod day13;
 
 pub trait AdventOfCode {
     fn run(&mut self, base_dir: &PathBuf);
@@ -38,6 +39,7 @@ fn main() {
         Box::new(day10::Data::default()),
         Box::new(day11::Data::default()),
         Box::new(day12::Data::default()),
+        Box::new(day13::Data::default()),
     ];
 
     for mut day in days {
