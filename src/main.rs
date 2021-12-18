@@ -8,6 +8,8 @@ mod day13;
 mod day14;
 mod day15;
 mod day16;
+mod day17;
+mod day18;
 mod day2;
 mod day3;
 mod day4;
@@ -46,6 +48,8 @@ fn main() {
         Box::new(day14::Data::default()),
         Box::new(day15::Data::default()),
         Box::new(day16::Data::default()),
+        Box::new(day17::Data::default()),
+        Box::new(day18::Data::default()),
     ];
 
     for mut day in days {

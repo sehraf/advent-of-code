@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 #aoc-runner = "^0.2"
 #aoc-runner-derive = "^0.2"
+nom = "7.1.0"

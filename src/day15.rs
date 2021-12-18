@@ -78,6 +78,7 @@ impl Data {
             candidates.push(Reverse((self.input[y][x].0, (x, y))))
         }
 
+        // is this A* ?
         while let Some(Reverse((cost, (x, y)))) = candidates.pop() {
             for (x_2, y_2) in get_directions(&(x, y), &max_pos) {
                 let candidate = &mut self.input[y_2][x_2];
