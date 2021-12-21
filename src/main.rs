@@ -1,4 +1,4 @@
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, time::Instant};
 
 mod day1;
 mod day10;
@@ -10,7 +10,10 @@ mod day15;
 mod day16;
 mod day17;
 mod day18;
+mod day19;
 mod day2;
+mod day20;
+mod day21;
 mod day3;
 mod day4;
 mod day5;
@@ -20,7 +23,7 @@ mod day8;
 mod day9;
 
 pub trait AdventOfCode {
-    fn run(&mut self, base_dir: &PathBuf);
+    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64);
 }
 
 fn main() {
@@ -50,9 +53,29 @@ fn main() {
         Box::new(day16::Data::default()),
         Box::new(day17::Data::default()),
         Box::new(day18::Data::default()),
+        Box::new(day19::Data::default()),
+        Box::new(day20::Data::default()),
+        Box::new(day21::Data::default()),
     ];
 
+    let mut results = vec![];
     for mut day in days {
-        day.run(&base_dir);
+        let t0 = Instant::now();
+        let ret = day.run(&base_dir);
+        results.push((ret, Instant::now().duration_since(t0)));
+    }
+
+    println!();
+    println!("Duration summary");
+    for i in 0..results.len() {
+        let duration = format!("{:?}", results[i].1);
+
+        println!(
+            "Day {:2}: 1) {:10} 2) {:15} - took {:>15}",
+            i + 1,
+            results[i].0 .0,
+            results[i].0 .1,
+            duration
+        );
     }
 }

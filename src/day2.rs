@@ -15,11 +15,10 @@ pub struct Data {
 }
 
 impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) {
+    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
         self.load(base_dir, "day2.txt");
 
-        println!("day 2.1: {}", self.puzzle1());
-        println!("day 2.2: {}", self.puzzle2());
+        (self.puzzle1() as u64, self.puzzle2() as u64)
     }
 }
 

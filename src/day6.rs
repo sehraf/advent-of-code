@@ -16,11 +16,14 @@ pub struct Data {
 }
 
 impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) {
+    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
         self.load(base_dir, String::from(DAY) + ".txt");
+        let a = self.puzzle1(80) as u64;
 
-        println!("{}, puzzle 1: {}", DAY, self.puzzle1(80));
-        println!("{}, puzzle 2: {}", DAY, self.puzzle1(256 - 80)); // this is essential!! self.input is not reset between calls!
+        // self.load(base_dir, String::from(DAY) + ".txt");
+        let b = self.puzzle1(256 - 80) as u64; // this is essential!! self.input is not reset between calls!
+
+        (a, b)
     }
 }
 
@@ -88,8 +91,6 @@ impl Data {
         for _ in 0..days {
             self.tick_schools();
         }
-
-        // dbg!(&self.input);
 
         self.input.iter().fold(0, |acc, school| acc + school.count)
     }

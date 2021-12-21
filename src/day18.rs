@@ -197,12 +197,14 @@ pub struct Data {
 }
 
 impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) {
+    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
         self.load(base_dir, String::from(DAY) + ".txt");
-        println!("{}, puzzle 1: {}", DAY, self.puzzle1());
+        let a = self.puzzle1();
 
         self.load(base_dir, String::from(DAY) + ".txt");
-        println!("{}, puzzle 2: {}", DAY, self.puzzle2());
+        let b = self.puzzle2();
+
+        (a, b)
     }
 }
 
