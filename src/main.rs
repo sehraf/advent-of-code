@@ -14,6 +14,9 @@ mod day19;
 mod day2;
 mod day20;
 mod day21;
+mod day22;
+mod day23;
+mod day24;
 mod day3;
 mod day4;
 mod day5;
@@ -56,6 +59,9 @@ fn main() {
         Box::new(day19::Data::default()),
         Box::new(day20::Data::default()),
         Box::new(day21::Data::default()),
+        Box::new(day22::Data::default()),
+        Box::new(day23::Data::default()), // the unloved child nobody talks about
+        Box::new(day24::Data::default()),
     ];
 
     let mut results = vec![];
@@ -71,7 +77,7 @@ fn main() {
         let duration = format!("{:?}", results[i].1);
 
         println!(
-            "Day {:2}: 1) {:10} 2) {:15} - took {:>15}",
+            "Day {:2}: 1) {:17} 2) {:17} - took {:>15}",
             i + 1,
             results[i].0 .0,
             results[i].0 .1,

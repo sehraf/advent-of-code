@@ -96,8 +96,6 @@ impl Data {
             rolls += 3;
         }
 
-        dbg!(rolls, &g);
-
         rolls
             * if g.score.0 >= 1000 {
                 g.score.1
