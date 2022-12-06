@@ -1,187 +1,88 @@
-use std::path::PathBuf;
+use aoc_runner_derive::aoc;
+use aoc_runner_derive::aoc_generator;
+use nom::Finish;
+use nom::bytes::complete::tag;
+use nom::character::complete::digit1;
+use nom::combinator::map;
+use nom::combinator::map_res;
+use nom::sequence::separated_pair;
 
-use crate::AdventOfCode;
-
-const DAY: &str = "day4";
-
-#[derive(Debug)]
-struct Board {
-    data: [i32; 25],
-    marked: [bool; 25],
-}
-
-impl Board {
-    pub fn new(input: Vec<i32>) -> Self {
-        assert_eq!(input.len(), 25, "wrong input lenght");
-
-        Board {
-            data: input.try_into().unwrap(),
-            marked: [false; 25],
-        }
-    }
-
-    pub fn check_number(&mut self, number: &i32) -> bool {
-        for i in 0..self.data.len() {
-            if &self.data[i] == number {
-                self.marked[i] = true;
-            }
-        }
-
-        self.check()
-    }
-
-    pub fn check(&self) -> bool {
-        for i in 0..5 {
-            // rows
-            if self.marked[0 + i * 5]
-                && self.marked[1 + i * 5]
-                && self.marked[2 + i * 5]
-                && self.marked[3 + i * 5]
-                && self.marked[4 + i * 5]
-            {
-                return true;
-            }
-
-            // columns
-            if self.marked[0 + i]
-                && self.marked[5 + i]
-                && self.marked[10 + i]
-                && self.marked[15 + i]
-                && self.marked[20 + i]
-            {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    fn score_unmarked(&self) -> i32 {
-        let mut sum = 0;
-        for i in 0..self.marked.len() {
-            if !self.marked[i] {
-                sum += self.data[i];
-            }
-        }
-        sum
-    }
-}
-
-#[derive(Debug, Default)]
 pub struct Data {
-    input: Vec<i32>,
-    boards: Vec<Board>,
-}
-
-impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
-        self.load(base_dir, String::from(DAY) + ".txt");
-        let a = self.puzzle1() as u64;
-
-        // self.load(base_dir, String::from(DAY) + ".txt");
-        let b = self.puzzle2() as u64;
-
-        (a, b)
-    }
+    a: (u32, u32),
+    b: (u32, u32),
 }
 
 impl Data {
-    fn load(&mut self, base_dir: &PathBuf, test_input: String) {
-        let input_file = base_dir.join(test_input);
-        assert!(
-            input_file.exists(),
-            "input file {} does not exist",
-            input_file.to_string_lossy()
-        );
-        let input = std::fs::read_to_string(input_file).expect("failed to read file");
-
-        // prepare input
-        let mut lines = input.lines();
-        self.input = lines
-            .next()
-            .unwrap()
-            .split_terminator(',')
-            .map(|s| s.parse().expect("failed to parse str"))
-            .collect();
-        assert!(lines.next().unwrap() == String::new());
-
-        // fill boards
-        while let Some(next_line) = lines.next() {
-            let mut board = next_line.to_owned();
-            for _ in 0..4 {
-                board += " ";
-                board += lines.next().unwrap();
-            }
-            let board = Board::new(
-                board
-                    .split_ascii_whitespace()
-                    .map(|s| s.parse().unwrap())
-                    .collect(),
-            );
-            self.boards.push(board);
-
-            if lines.next().is_none() {
-                break;
-            }
+    fn overlapping_p1(&self) -> bool {
+        match (self.a, self.b) {
+            (a, b) if a.0 <= b.0 && a.1 >= b.1 => true,
+            (a, b) if a.0 >= b.0 && a.1 <= b.1 => true,
+            _ => false,
         }
     }
 
-    fn puzzle1(&mut self) -> i32 {
-        for number in &self.input {
-            for board in &mut self.boards {
-                if board.check_number(number) {
-                    return board.score_unmarked() * number;
-                }
-            }
+    fn overlapping_p2(&self) -> bool {
+        match (self.a, self.b) {
+            (a, b) if a.0 >= b.0 && a.0 <= b.1 => true,
+            (a, b) if a.1 >= b.0 && a.1 <= b.1 => true,
+            (b, a) if a.0 >= b.0 && a.0 <= b.1 => true,
+            (b, a) if a.1 >= b.0 && a.1 <= b.1 => true,
+            _ => false,
         }
-        -1
-    }
-
-    fn puzzle2(&mut self) -> i32 {
-        for number in &self.input {
-            self.boards.iter_mut().for_each(|board| {
-                board.check_number(number);
-            });
-
-            // Assume that there won't be multiple winners at the same time
-            if self.boards.len() == 1 {
-                // are we there yet?
-                let board = self.boards.first().unwrap();
-                if board.check() {
-                    return board.score_unmarked() * number;
-                }
-            } else {
-                self.boards.retain(|board| !board.check());
-            }
-        }
-        -1
     }
 }
 
-#[cfg(test)]
-mod day1 {
-    use std::env;
-    use std::path::PathBuf;
+#[aoc_generator(day4)]
+pub fn input_generator(input: &str) -> Vec<Data> {
+    input
+        .lines()
+        .map(|line| parse(line).finish().map(|(_, x)| x).unwrap())
+        .collect()
+}
 
-    use super::{Data, DAY};
+#[aoc(day4, part1)]
+pub fn part1(input: &[Data]) -> u32 {
+    input.iter().filter(|d| d.overlapping_p1()).count() as u32
+}
+
+#[aoc(day4, part2)]
+pub fn part2(input: &[Data]) -> u32 {
+    input.iter().filter(|d| d.overlapping_p2()).count() as u32
+}
+
+fn parse_range(input: &str) -> nom::IResult<&str, (u32, u32)> {
+    separated_pair(
+        map_res(digit1, str::parse),
+        tag("-"),
+        map_res(digit1, str::parse),
+    )(input)
+}
+
+fn parse(input: &str) -> nom::IResult<&str, Data> {
+    map(
+        separated_pair(parse_range, tag(","), parse_range),
+        |(a, b)| Data { a, b },
+    )(input)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{input_generator, part1, part2};
+
+    const INPUT: &str = "2-4,6-8
+2-3,4-5
+5-7,7-9
+2-8,3-7
+6-6,4-6
+2-6,4-8";
 
     #[test]
-    fn puzzle1() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, String::from(DAY) + "_test.txt");
-        assert_eq!(data.puzzle1(), 4512);
+    fn test1() {
+        assert_eq!(part1(&input_generator(INPUT)), 2);
     }
 
     #[test]
-    fn puzzle2() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, String::from(DAY) + "_test.txt");
-        assert_eq!(data.puzzle2(), 1924);
+    fn test2() {
+        assert_eq!(part2(&input_generator(INPUT)), 4);
     }
 }

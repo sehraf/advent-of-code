@@ -99,7 +99,7 @@ impl SnailFishNumber {
                     (None, None, true) => return (None, None, true),
                     (None, None, false) => {}
                     (Some(a), Some(b), true) => {
-                        // out left child just exploded!
+                        // our left child just exploded!
                         bo.1.sink_increase(b, true);
                         bo.0 = SnailFishNumber::Regular(0);
                         return (Some(a), None, true);
@@ -121,7 +121,7 @@ impl SnailFishNumber {
                     (None, None, true) => return (None, None, true),
                     (None, None, false) => {}
                     (Some(a), Some(b), true) => {
-                        // out right child just exploded!
+                        // our right child just exploded!
                         bo.0.sink_increase(a, false);
                         bo.1 = SnailFishNumber::Regular(0);
                         return (None, Some(b), true);

@@ -280,5 +280,6 @@ mod day1 {
         for op in &data.input[0] {
             state.process(op);
         }
-        assert_eq!(state.regs, [1, 0, 0, 0]);    }
+        assert_eq!(state.regs, [1, 0, 0, 0]);
+    }
 }

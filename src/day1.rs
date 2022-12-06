@@ -1,93 +1,53 @@
-use std::path::PathBuf;
+use aoc_runner_derive::aoc;
+use aoc_runner_derive::aoc_generator;
 
-use crate::AdventOfCode;
-
-#[derive(Debug, Default)]
-pub struct Data {
-    input: String,
+#[aoc_generator(day1)]
+pub fn input_generator(input: &str) -> Vec<u32> {
+    let mut input: Vec<u32> = input
+        .split("\n\n")
+        .map(|chunk| chunk.lines().map(|l| l.parse::<u32>().unwrap()).sum())
+        .collect();
+    // sort reverse
+    input.sort_by(|a, b| b.cmp(a));
+    input
 }
 
-impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
-        self.load(base_dir, "day1.txt");
-
-        (self.puzzle1() as u64, self.puzzle2() as u64)
-    }
+#[aoc(day1, part1)]
+pub fn part1(input: &[u32]) -> u32 {
+    input.get(0).unwrap().to_owned()
 }
 
-impl Data {
-    fn load(&mut self, base_dir: &PathBuf, test_input: &str) {
-        let input_file = base_dir.join(test_input);
-        assert!(
-            input_file.exists(),
-            "input file {} does not exist",
-            input_file.to_string_lossy()
-        );
-        self.input = std::fs::read_to_string(input_file).expect("failed to read file");
-    }
-
-    fn puzzle1(&self) -> i32 {
-        let mut larger = 0;
-        let mut last = None;
-
-        for line in self.input.lines() {
-            let num: i32 = line.parse().unwrap();
-
-            last = match last {
-                None => Some(num),
-                Some(last) => {
-                    if last < num {
-                        larger += 1;
-                    }
-                    Some(num)
-                }
-            }
-        }
-
-        larger
-    }
-
-    fn puzzle2(&self) -> i32 {
-        let mut larger = 0;
-        let numbers: Vec<i32> = self.input.lines().map(|str| str.parse().unwrap()).collect();
-
-        for i in 0..numbers.len() - 3 {
-            let a: i32 = numbers[i..=i + 2].iter().sum();
-            let b: i32 = numbers[i + 1..=i + 3].iter().sum();
-
-            if a < b {
-                larger += 1;
-            }
-        }
-
-        larger
-    }
+#[aoc(day1, part2)]
+pub fn part2(input: &[u32]) -> u32 {
+    input.iter().take(3).sum()
 }
 
 #[cfg(test)]
-mod day1 {
-    use std::env;
-    use std::path::PathBuf;
+mod tests {
+    use super::{input_generator, part1, part2};
 
-    use super::Data;
+    const INPUT: &str = "1000
+2000
+3000
+
+4000
+
+5000
+6000
+
+7000
+8000
+9000
+
+10000";
 
     #[test]
-    fn puzzle1() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, "day1_test.txt");
-        assert_eq!(data.puzzle1(), 7);
+    fn test1() {
+        assert_eq!(part1(&input_generator(INPUT)), 24000);
     }
 
     #[test]
-    fn puzzle2() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, "day1_test.txt");
-        assert_eq!(data.puzzle2(), 5);
+    fn test2() {
+        assert_eq!(part2(&input_generator(INPUT)), 45000);
     }
 }

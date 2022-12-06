@@ -1,174 +1,174 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::VecDeque;
 
-use crate::AdventOfCode;
+use aoc_runner_derive::aoc;
+use aoc_runner_derive::aoc_generator;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::{anychar, char, digit1, line_ending},
+    combinator::map_res,
+    multi::separated_list1,
+    sequence::{delimited, tuple},
+};
 
-const DAY: &str = "day5";
-
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-struct Coords {
-    x: i32,
-    y: i32,
+#[derive(Debug, Clone)]
+pub struct Move {
+    count: usize,
+    src: usize,
+    dst: usize,
+}
+#[derive(Debug, Clone)]
+pub struct State {
+    stacks: Vec<VecDeque<char>>,
+    moves: Vec<Move>,
 }
 
-#[derive(Debug)]
-struct Vents {
-    a: Coords,
-    b: Coords,
-}
-
-#[derive(Debug, Default)]
-pub struct Data {
-    input: Vec<Vents>,
-    map: HashMap<Coords, i32>,
-    // max_x: i32,
-}
-
-impl AdventOfCode for Data {
-    fn run(&mut self, base_dir: &PathBuf) -> (u64, u64) {
-        self.load(base_dir, String::from(DAY) + ".txt");
-        let a = self.puzzle1() as u64;
-
-        // self.load(base_dir, String::from(DAY) + ".txt");
-        let b = self.puzzle2() as u64;
-
-        (a, b)
-    }
-}
-
-impl Data {
-    fn load(&mut self, base_dir: &PathBuf, test_input: String) {
-        let input_file = base_dir.join(test_input);
-        assert!(
-            input_file.exists(),
-            "input file {} does not exist",
-            input_file.to_string_lossy()
-        );
-        let input = std::fs::read_to_string(input_file).expect("failed to read file");
-
-        // prepare input
-        let lines = input.lines();
-        self.input = lines
-            .map(|s| {
-                // start
-                let mut sides = s.split_terminator("->");
-                let mut tmp = sides.next().unwrap().split_terminator(',');
-                let a = Coords {
-                    x: tmp.next().unwrap().trim().parse().unwrap(),
-                    y: tmp.next().unwrap().trim().parse().unwrap(),
-                };
-
-                let mut tmp = sides.next().unwrap().split_terminator(',');
-                let b = Coords {
-                    x: tmp.next().unwrap().trim().parse().unwrap(),
-                    y: tmp.next().unwrap().trim().parse().unwrap(),
-                };
-
-                Vents { a, b }
+impl State {
+    pub fn get_tops(&self) -> String {
+        self.stacks
+            .as_slice()
+            .iter()
+            .map(|stack| match stack.front() {
+                Some(a) => a.to_string(),
+                None => String::new(),
             })
-            .collect();
+            .reduce(|acc, c| acc + &c)
+            .unwrap()
     }
 
-    fn build_map(&mut self, include_diag: bool) {
-        self.map.clear();
-        for vent in &self.input {
-            // check validity
-            let straight = vent.a.x == vent.b.x || vent.a.y == vent.b.y;
-            let diag = (vent.a.x - vent.b.x).abs() == (vent.a.y - vent.b.y).abs();
+    pub fn run_moves(&mut self, is_9001: bool) {
+        let moves = &self.moves;
+        let stacks = &mut self.stacks;
+        for Move { count, src, dst } in moves {
+            // println!("moving {} from {} to {}", mv.count, mv.src, mv.dst);
 
-            if (!include_diag && !straight) || (include_diag && (!straight && !diag)) {
-                continue;
+            if is_9001 {
+                let tmp = stacks[src - 1].drain(0..*count).rev().collect::<Vec<_>>();
+                for x in tmp {
+                    stacks[dst - 1].push_front(x)
+                }
+            } else {
+                for _ in 0..*count {
+                    match stacks[src - 1].pop_front() {
+                        Some(a) => stacks[dst - 1].push_front(a),
+                        None => (),
+                    }
+                }
             }
 
-            let mut pos = vent.a.clone();
-            // cheap a** do while, don't judge me
-            while {
-                let entry = self.map.entry(pos).or_insert(0);
-                *entry += 1;
+            // println!("{stacks:?}");
+        }
+    }
+}
 
-                let done = pos != vent.b;
+#[aoc_generator(day5)]
+pub fn input_generator(input: &str) -> State {
+    let (_, s) = parse(input).expect("failed to parse input");
+    s
+}
 
-                // move to the next pos
-                if vent.a.y < vent.b.y {
-                    pos.y += 1;
-                } else if vent.a.y > vent.b.y {
-                    pos.y -= 1;
-                }
-                if vent.a.x < vent.b.x {
-                    pos.x += 1;
-                } else if vent.a.x > vent.b.x {
-                    pos.x -= 1;
-                }
+#[aoc(day5, part1)]
+pub fn part1(input: &State) -> String {
+    // println!("{input:?}");
 
-                done
-            } {}
+    let mut state = input.clone();
+    state.run_moves(false);
+    state.get_tops()
+}
+
+#[aoc(day5, part2)]
+pub fn part2(input: &State) -> String {
+    let mut state = input.clone();
+    state.run_moves(true);
+    state.get_tops()
+}
+
+fn parse_stack_crate(input: &str) -> nom::IResult<&str, char> {
+    delimited(char('['), anychar, char(']'))(input)
+}
+
+const EMPTY_STACK: &str = "   ";
+fn parse_stack_empty(input: &str) -> nom::IResult<&str, char> {
+    nom::combinator::map(tag(EMPTY_STACK), |_| ' ')(input)
+}
+
+fn parse_stack(input: &str) -> nom::IResult<&str, Vec<char>> {
+    separated_list1(char(' '), alt((parse_stack_crate, parse_stack_empty)))(input)
+}
+
+fn parse_moves(line: &str) -> nom::IResult<&str, Move> {
+    nom::combinator::map(
+        tuple((
+            tag("move "),
+            map_res(digit1, str::parse),
+            tag(" from "),
+            map_res(digit1, str::parse),
+            tag(" to "),
+            map_res(digit1, str::parse),
+        )),
+        |(_, count, _, src, _, dst)| Move { count, src, dst },
+    )(line)
+}
+
+fn parse(input: &str) -> nom::IResult<&str, State> {
+    let halves = input.split_once("\n\n").unwrap();
+    let (rem, stacks_horizontal) = separated_list1(line_ending, parse_stack)(halves.0)?;
+
+    dbg!(&rem);
+    // println!("{stacks_horizontal:#?}");
+
+    let num = (rem.chars().count() + 1) / 4;
+
+    // flip stack to vertical layout
+    let mut stacks: Vec<VecDeque<char>> = vec![];
+    for _ in 0..num {
+        stacks.push(VecDeque::new());
+    }
+
+    for stack_h in stacks_horizontal.into_iter() {
+        // println!("{stack_h:?}");
+        for (pos, c) in stack_h.into_iter().enumerate() {
+            let pos = pos % num;
+            // println!("{pos}: '{c}'");
+
+            match c {
+                'A'..='Z' => stacks[pos].push_back(c),
+                ' ' => (),
+                _ => panic!("unexpected character on stack"),
+            }
         }
     }
 
-    #[allow(unused)]
-    fn draw_map(&mut self, width: i32) {
-        for y in 0..width {
-            for x in 0..width {
-                let coord = Coords { x, y };
-                if let Some(val) = self.map.get_key_value(&coord) {
-                    print!("{}", val.1);
-                } else {
-                    print!("-");
-                }
-            }
-            print!("\n");
-        }
+    let mut moves = vec![];
+    for line in halves.1.lines() {
+        let (_, mv) = parse_moves(line)?;
+        moves.push(mv);
     }
 
-    fn puzzle1(&mut self) -> i32 {
-        self.build_map(false);
-
-        let mut above = 0;
-        self.map.iter().for_each(|entry| {
-            if entry.1 > &1 {
-                above += 1
-            }
-        });
-        above
-    }
-
-    fn puzzle2(&mut self) -> i32 {
-        self.build_map(true);
-
-        // dbg!(&self.map);
-        let mut above = 0;
-        self.map.iter().for_each(|entry| {
-            if entry.1 > &1 {
-                above += 1
-            }
-        });
-        above
-    }
+    Ok((rem, State { stacks, moves }))
 }
 
 #[cfg(test)]
-mod day1 {
-    use std::env;
-    use std::path::PathBuf;
+mod tests {
+    use super::{input_generator, part1, part2};
 
-    use super::{Data, DAY};
+    const INPUT: &str = "    [D]    
+[N] [C]    
+[Z] [M] [P]
+ 1   2   3 
+
+move 1 from 2 to 1
+move 3 from 1 to 3
+move 2 from 2 to 1
+move 1 from 1 to 2";
 
     #[test]
-    fn puzzle1() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, String::from(DAY) + "_test.txt");
-        assert_eq!(data.puzzle1(), 5);
+    fn test1() {
+        assert_eq!(part1(&input_generator(INPUT)), "CMZ");
     }
 
     #[test]
-    fn puzzle2() {
-        let base_dir: PathBuf = env::current_dir()
-            .expect("failed to get current dir")
-            .join("input/2021");
-        let mut data = Data::default();
-        data.load(&base_dir, String::from(DAY) + "_test.txt");
-        assert_eq!(data.puzzle2(), 12);
+    fn test2() {
+        assert_eq!(part2(&input_generator(INPUT)), "MCD");
     }
 }
