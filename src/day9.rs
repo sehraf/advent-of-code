@@ -136,6 +136,7 @@ impl State {
                     }
                     println!("");
                 }
+                println!("");
             }
         }
 
@@ -177,8 +178,9 @@ pub fn part2(input: &[Steps]) -> usize {
                     }
                 )
             }
-            println!("")
+            println!("");
         }
+        println!("");
     }
 
     state.visited.into_iter().filter(|(_, v)| *v).count()
