@@ -1,4 +1,4 @@
-use std::{array::from_mut, cmp::Ordering};
+use std::cmp::Ordering;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{

@@ -2,13 +2,14 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
     character::complete::{digit1, line_ending},
     combinator::{map, map_res},
-    multi::separated_list1, sequence::pair,
+    multi::separated_list1,
+    sequence::pair,
 };
 
 #[aoc_generator(day1)]
 pub fn input_generator(input: &str) -> Vec<u32> {
     let (rem, ret) = parse(input).expect("failed to parse input");
-    assert!(rem.is_empty());
+    assert!(rem.is_empty(), "remaining {rem}");
     ret
 }
 
