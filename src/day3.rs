@@ -117,9 +117,9 @@ pub fn part2(input: &T) -> u32 {
             let x_range = symbol.pos.x as i32 - 1..=symbol.pos.x as i32 + 1;
             let y_range = symbol.pos.y as i32 - 1..=symbol.pos.y as i32 + 1;
             let adjacent = input.numbers.iter().filter(|&number| {
-                (x_range.contains(&(number.pos_begin as i32))
-                    || x_range.contains(&(number.pos_end.x as i32)))
-                    && y_range.contains(&(number.pos_end.y as i32))
+                y_range.contains(&(number.pos_end.y as i32))
+                    && (x_range.contains(&(number.pos_begin as i32))
+                        || x_range.contains(&(number.pos_end.x as i32)))
             });
 
             let res = adjacent.fold((1, 0), |(acc, r), e| (acc * e.val, r + 1));
