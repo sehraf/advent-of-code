@@ -161,57 +161,88 @@ pub fn part2(input: &T) -> u32 {
 
             'outer: while let Some(prev) = to_process.pop() {
                 for m in mapping {
-                    let p = prev;
-                    let s = &m.src_range_start;
-                    let l = &m.range_len;
-                    let d = &m.dst_range_start;
+                    const OLD_CODE: bool = false;
+                    if OLD_CODE {
+                        // old code
 
-                    let move_dist = *d as i32 - *s as i32;
+                        let p = prev;
+                        let s = &m.src_range_start;
+                        let l = &m.range_len;
+                        let d = &m.dst_range_start;
 
-                    match (p.s, p.e, *s, s + l - 1) {
-                        // prev range is below mapping range
-                        (_, pe, ms, _) if pe < ms => {}
-                        // prev range is beyond mapping range
-                        (ps, _, _, me) if ps > me => {}
+                        let mv = *d as i32 - *s as i32;
 
-                        // prev range is subset of mapping range
-                        (ps, pe, ms, me) if ps >= ms && pe <= me => {
-                            result.push(move_range(&prev, move_dist));
+                        match (p.s, p.e, *s, s + l - 1) {
+                            // prev range is below mapping range
+                            (_, pe, ms, _) if pe < ms => {}
+                            // prev range is beyond mapping range
+                            (ps, _, _, me) if ps > me => {}
+
+                            // prev range is subset of mapping range
+                            (ps, pe, ms, me) if ps >= ms && pe <= me => {
+                                result.push(move_range(&prev, mv));
+                                continue 'outer;
+                            }
+                            // prev range is below mapping range but overlaps partially
+                            (ps, pe, ms, me) if ps < ms && pe >= ms && pe <= me => {
+                                // split range
+                                let range_a = Range { s: ps, e: ms - 1 };
+                                let range_b = Range { s: ms, e: pe };
+
+                                to_process.push(range_a);
+                                result.push(move_range(&range_b, mv));
+                                continue 'outer;
+                            }
+                            // prev range is above mapping range but overlaps partially
+                            (ps, pe, ms, me) if ps >= ms && ps <= me && pe > me => {
+                                // split range
+                                let range_a = Range { s: ps, e: me };
+                                let range_b = Range { s: me + 1, e: pe };
+
+                                result.push(move_range(&range_a, mv));
+                                to_process.push(range_b);
+                                continue 'outer;
+                            }
+                            // mapping range is subset of prev range
+                            (ps, pe, ms, me) if ps < ms && pe > me => {
+                                // split range
+                                let range_a = Range { s: ps, e: ms - 1 };
+                                let range_b = Range { s: ms, e: me };
+                                let range_c = Range { s: me + 1, e: pe };
+
+                                to_process.push(range_a);
+                                result.push(move_range(&range_b, mv));
+                                to_process.push(range_c);
+                                continue 'outer;
+                            }
+                            (_, _, _, _) => unreachable!(),
+                        }
+                    } else {
+                        // new code
+
+                        // prev
+                        let ps = &prev.s;
+                        let pe = &prev.e;
+                        // mapping
+                        let ms = &m.src_range_start;
+                        let me = &(m.src_range_start + m.range_len - 1);
+
+                        let mv = m.dst_range_start as i32 - *ms as i32;
+
+                        // intersection
+                        let is = ps.max(ms);
+                        let ie = pe.min(me);
+
+                        if is <= ie {
+                            result.push(move_range(&Range { s: *is, e: *ie }, mv));
+                            if ps < is {
+                                to_process.push(Range { s: *ps, e: is - 1 });
+                            }
+                            if ie < pe {
+                                to_process.push(Range { s: ie + 1, e: *pe });
+                            }
                             continue 'outer;
                         }
-                        // prev range is below mapping range but overlaps partially
-                        (ps, pe, ms, me) if ps < ms && pe >= ms && pe <= me => {
-                            // split range
-                            let range_a = Range { s: ps, e: ms - 1 };
-                            let range_b = Range { s: ms, e: pe };
-
-                            to_process.push(range_a);
-                            result.push(move_range(&range_b, move_dist));
-                            continue 'outer;
-                        }
-                        // prev range is above mapping range but overlaps partially
-                        (ps, pe, ms, me) if ps >= ms && ps <= me && pe > me => {
-                            // split range
-                            let range_a = Range { s: ps, e: me };
-                            let range_b = Range { s: me + 1, e: pe };
-
-                            result.push(move_range(&range_a, move_dist));
-                            to_process.push(range_b);
-                            continue 'outer;
-                        }
-                        // mapping range is subset of prev range
-                        (ps, pe, ms, me) if ps < ms && pe > me => {
-                            // split range
-                            let range_a = Range { s: ps, e: ms - 1 };
-                            let range_b = Range { s: ms, e: me };
-                            let range_c = Range { s: me + 1, e: pe };
-
-                            to_process.push(range_a);
-                            result.push(move_range(&range_b, move_dist));
-                            to_process.push(range_c);
-                            continue 'outer;
-                        }
-                        (_, _, _, _) => unreachable!(),
                     }
                 }
 
