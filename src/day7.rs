@@ -100,7 +100,7 @@ fn to_classification(same: &Vec<usize>) -> Classification {
     } else {
         // this is an edge case when all cards are Js, only relevant for part 2
         // Changing the counting logic turned out harder than this hack
-        assert_eq!(same, &vec![0; 12]);
+        assert_eq!(same.iter().sum::<usize>(), 0);
         Classification::FiveOfAKind
     }
 }
@@ -128,18 +128,14 @@ fn input_hands<const PART2: bool>(
 #[aoc(day7, part1)]
 pub fn part1(input: &[T]) -> u32 {
     let classify = |cards: &Vec<Card<false>>| -> Classification {
-        let chars = vec![
-            'A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2',
-        ];
-
-        let mut same = vec![0; 13];
-        debug_assert_eq!(chars.len(), same.len());
-
-        // count the occurrence of each card
-        for (i, c) in chars.iter().enumerate() {
-            same[i] = cards.iter().filter(|&card| &card.0 == c).count();
-        }
-
+        let same = cards
+            .iter()
+            .map(|c| c.0)
+            // count the occurrence of a card
+            .counts()
+            .values()
+            .cloned()
+            .collect();
         to_classification(&same)
     };
 
@@ -157,9 +153,6 @@ pub fn part1(input: &[T]) -> u32 {
 #[aoc(day7, part2)]
 pub fn part2(input: &[T]) -> u32 {
     let classify = |cards: &Vec<Card<true>>| -> Classification {
-        // exclude J due to it special nature
-        let chars = vec!['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
-
         // it only makes sense to replace J with other existing cards
         let j_candidates: Vec<char> = cards.iter().map(|c| c.0).unique().collect();
 
@@ -167,31 +160,30 @@ pub fn part2(input: &[T]) -> u32 {
         j_candidates
             .iter()
             .map(|j| {
-                let mut same = vec![0; 12];
-                debug_assert_eq!(chars.len(), same.len());
-
-                for (i, c) in chars.iter().enumerate() {
-                    // count the occurrence of a card
-                    let a = cards.iter().filter(|&card| &card.0 == c).count();
-                    // count the occurrence of a card but replace J
-                    let b = cards
+                let a = {
+                    let same = cards
                         .iter()
-                        .map(|card| {
-                            if card.0 == 'J' {
-                                Card(*j)
-                            } else {
-                                Card(card.0)
-                            }
-                        })
-                        .filter(|card: &Card<true>| &card.0 == c)
-                        .count();
+                        .map(|c| c.0)
+                        .counts()
+                        .values()
+                        .cloned()
+                        .collect();
+                    to_classification(&same)
+                };
 
-                    // get the maximum (it doesn't matter of J was replaced or not)
-                    same[i] = a.max(b)
-                }
-
-                // classify the hand based on the number of occurrences of cards
-                to_classification(&same)
+                // count the occurrence of a card but replace J
+                let b = {
+                    let same = cards
+                        .iter()
+                        .map(|c| c.0)
+                        .map(|card| if card == 'J' { *j } else { card })
+                        .counts()
+                        .values()
+                        .cloned()
+                        .collect();
+                    to_classification(&same)
+                };
+                a.max(b)
             })
             .max()
             .unwrap()
