@@ -98,10 +98,7 @@ fn to_classification(same: &Vec<usize>) -> Classification {
     } else if same.contains(&1) {
         Classification::HighCard
     } else {
-        // this is an edge case when all cards are Js, only relevant for part 2
-        // Changing the counting logic turned out harder than this hack
-        assert_eq!(same.iter().sum::<usize>(), 0);
-        Classification::FiveOfAKind
+        unreachable!()
     }
 }
 
