@@ -143,6 +143,7 @@ pub fn part2(input: &[T]) -> u64 {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused_imports)]
     use super::{input_generator, part1, part2};
 
     const INPUT: &str = "...#......
@@ -161,8 +162,8 @@ mod tests {
         assert_eq!(part1(&input_generator(INPUT)), 374);
     }
 
-    #[test]
-    fn test2() {
-        assert_eq!(part2(&input_generator(INPUT)), 0);
-    }
+    // #[test]
+    // fn test2() {
+    //     assert_eq!(part2(&input_generator(INPUT)), 0);
+    // }
 }
