@@ -13,9 +13,9 @@ itertools = "0.12"
 num = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
-test-log = {version = "0.2", features = ["trace"]}
+test-log = { version = "0.2", features = ["trace"] }
 fxhash = "0.2"
+glam = "0.24"
 
 # rayon = "1.6"
 # ndarray = "0.15"
-# glam = "0.24"

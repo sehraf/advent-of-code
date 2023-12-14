@@ -1,82 +1,19 @@
-use std::fmt::Display;
-
 use aoc_runner_derive::{aoc, aoc_generator};
 use fxhash::FxHashMap;
+use glam::IVec2;
 use itertools::Itertools;
 use tracing::info;
-
-// (0,0) is top left
-#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
-pub struct Pos {
-    x: i64,
-    y: i64,
-}
-
-impl Display for Pos {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}, {}]", self.x, self.y)
-    }
-}
-
-impl Ord for Pos {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        match self.y.cmp(&other.y) {
-            std::cmp::Ordering::Equal => self.x.cmp(&other.x),
-            x => x,
-        }
-    }
-}
-
-impl PartialOrd for Pos {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl std::ops::Add<&Pos> for Pos {
-    type Output = Pos;
-    fn add(self, rhs: &Pos) -> Self::Output {
-        Pos {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
-
-impl std::ops::Sub<&Pos> for Pos {
-    type Output = Pos;
-    fn sub(self, rhs: &Pos) -> Self::Output {
-        Pos {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
-
-impl std::ops::AddAssign<&Pos> for Pos {
-    fn add_assign(&mut self, rhs: &Pos) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
-}
-
-impl std::ops::SubAssign<&Pos> for Pos {
-    fn sub_assign(&mut self, rhs: &Pos) {
-        self.x -= rhs.x;
-        self.y -= rhs.y;
-    }
-}
 
 // true == O
 // false == #
 // not found == .
-type T = (FxHashMap<Pos, bool>, Pos);
+type T = (FxHashMap<IVec2, bool>, IVec2);
 
 #[aoc_generator(day14)]
 #[tracing::instrument(skip(input))]
 pub fn input_generator(input: &str) -> T {
-    let y = input.lines().count() as i64;
-    let x = input.lines().next().unwrap().len() as i64;
+    let y = input.lines().count() as i32;
+    let x = input.lines().next().unwrap().len() as i32;
 
     (
         input
@@ -87,43 +24,43 @@ pub fn input_generator(input: &str) -> T {
                     .filter_map(|(x, c)| match c {
                         '.' => None,
                         'O' => Some((
-                            Pos {
-                                x: x as i64,
-                                y: y as i64,
+                            IVec2 {
+                                x: x as i32,
+                                y: y as i32,
                             },
                             true,
                         )),
                         '#' => Some((
-                            Pos {
-                                x: x as i64,
-                                y: y as i64,
+                            IVec2 {
+                                x: x as i32,
+                                y: y as i32,
                             },
                             false,
                         )),
                         _ => unreachable!(),
                     })
-                    .collect::<FxHashMap<Pos, bool>>()
+                    .collect::<FxHashMap<IVec2, bool>>()
             })
             .collect(),
-        Pos { x, y },
+        IVec2 { x, y },
     )
 }
 
 #[tracing::instrument(skip(input))]
-fn tilt(input: &mut FxHashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
+fn tilt(input: &mut FxHashMap<IVec2, bool>, dim: &IVec2, dir: &IVec2) {
     // all keys in the correct order
     let keys: Vec<_> = {
         match dir {
-            Pos { x, y } if *x == 1 && *y == 0 => {
+            IVec2 { x, y } if *x == 1 && *y == 0 => {
                 ((0..dim.x).rev()).cartesian_product(0..dim.y).collect()
             }
-            Pos { x, y } if *x == 0 && *y == 1 => {
+            IVec2 { x, y } if *x == 0 && *y == 1 => {
                 ((0..dim.y).rev()).cartesian_product(0..dim.x).collect()
             }
-            Pos { x, y } if *x == -1 && *y == 0 => {
+            IVec2 { x, y } if *x == -1 && *y == 0 => {
                 (0..=(dim.x - 1)).cartesian_product(0..dim.y).collect()
             }
-            Pos { x, y } if *x == 0 && *y == -1 => {
+            IVec2 { x, y } if *x == 0 && *y == -1 => {
                 (0..=(dim.y - 1)).cartesian_product(0..dim.x).collect()
             }
             _ => unreachable!(),
@@ -132,10 +69,10 @@ fn tilt(input: &mut FxHashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
 
     for key in keys {
         let pos = match dir {
-            Pos { x, y } if *x == 1 && *y == 0 => Pos { x: key.0, y: key.1 },
-            Pos { x, y } if *x == 0 && *y == 1 => Pos { x: key.1, y: key.0 },
-            Pos { x, y } if *x == -1 && *y == 0 => Pos { x: key.0, y: key.1 },
-            Pos { x, y } if *x == 0 && *y == -1 => Pos { x: key.1, y: key.0 },
+            IVec2 { x, y } if *x == 1 && *y == 0 => IVec2 { x: key.0, y: key.1 },
+            IVec2 { x, y } if *x == 0 && *y == 1 => IVec2 { x: key.1, y: key.0 },
+            IVec2 { x, y } if *x == -1 && *y == 0 => IVec2 { x: key.0, y: key.1 },
+            IVec2 { x, y } if *x == 0 && *y == -1 => IVec2 { x: key.1, y: key.0 },
             _ => unreachable!(),
         };
 
@@ -145,18 +82,18 @@ fn tilt(input: &mut FxHashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
         }
 
         // we have a round rock at `key`
-        let mut test_pos = pos + dir;
+        let mut test_pos = pos + *dir;
         while !(test_pos.x < 0 || test_pos.y < 0 || test_pos.x >= dim.x || test_pos.y >= dim.y) {
             match input.get(&test_pos) {
                 None => {}
                 Some(_) => break,
             }
 
-            test_pos += dir;
+            test_pos += *dir;
         }
 
         // correct off by one
-        test_pos -= dir;
+        test_pos -= *dir;
 
         if test_pos == pos {
             continue;
@@ -168,17 +105,17 @@ fn tilt(input: &mut FxHashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
 }
 
 #[tracing::instrument(skip(map))]
-fn score_map(map: &FxHashMap<Pos, bool>, hight: i64) -> u32 {
+fn score_map(map: &FxHashMap<IVec2, bool>, hight: i32) -> u32 {
     map.iter()
         .filter_map(|(pos, val)| if !val { None } else { Some(hight - pos.y) })
-        .sum::<i64>() as u32
+        .sum::<i32>() as u32
 }
 
 #[aoc(day14, part1)]
 #[tracing::instrument(skip(input))]
 pub fn part1(input: &T) -> u32 {
     let mut map = input.0.to_owned();
-    tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
+    tilt(&mut map, &input.1, &IVec2 { x: 0, y: -1 });
 
     score_map(&map, input.1.y)
 }
@@ -188,11 +125,11 @@ pub fn part1(input: &T) -> u32 {
 pub fn part2(input: &T) -> u32 {
     let mut map = input.0.to_owned();
 
-    let map_to_key = |map: &FxHashMap<Pos, bool>| -> String {
+    let map_to_key = |map: &FxHashMap<IVec2, bool>| -> String {
         let mut output = String::new();
         for y in 0..input.1.y {
             for x in 0..input.1.x {
-                output.push(match map.get(&Pos { x, y }) {
+                output.push(match map.get(&IVec2 { x, y }) {
                     None => '.',
                     Some(true) => 'O',
                     Some(false) => '#',
@@ -207,10 +144,10 @@ pub fn part2(input: &T) -> u32 {
     let mut history: FxHashMap<String, (usize, u32)> = FxHashMap::default();
     for idx in 0..max_rounds {
         // spin!
-        tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
-        tilt(&mut map, &input.1, &Pos { x: -1, y: 0 });
-        tilt(&mut map, &input.1, &Pos { x: 0, y: 1 });
-        tilt(&mut map, &input.1, &Pos { x: 1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: -1 });
+        tilt(&mut map, &input.1, &IVec2 { x: -1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: 1 });
+        tilt(&mut map, &input.1, &IVec2 { x: 1, y: 0 });
 
         // insert and check for loop
         if let Some((idx_start, _)) =
@@ -236,7 +173,9 @@ pub fn part2(input: &T) -> u32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{input_generator, part1, part2, tilt, Pos};
+    use glam::IVec2;
+
+    use super::{input_generator, part1, part2, tilt};
 
     const INPUT: &str = "O....#....
 O.OO#....#
@@ -301,22 +240,22 @@ O.#..O.#.#
         let input = input_generator(INPUT);
         let mut map = input.0.to_owned();
 
-        tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
-        tilt(&mut map, &input.1, &Pos { x: -1, y: 0 });
-        tilt(&mut map, &input.1, &Pos { x: 0, y: 1 });
-        tilt(&mut map, &input.1, &Pos { x: 1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: -1 });
+        tilt(&mut map, &input.1, &IVec2 { x: -1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: 1 });
+        tilt(&mut map, &input.1, &IVec2 { x: 1, y: 0 });
         assert_eq!(map, map1);
 
-        tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
-        tilt(&mut map, &input.1, &Pos { x: -1, y: 0 });
-        tilt(&mut map, &input.1, &Pos { x: 0, y: 1 });
-        tilt(&mut map, &input.1, &Pos { x: 1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: -1 });
+        tilt(&mut map, &input.1, &IVec2 { x: -1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: 1 });
+        tilt(&mut map, &input.1, &IVec2 { x: 1, y: 0 });
         assert_eq!(map, map2);
 
-        tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
-        tilt(&mut map, &input.1, &Pos { x: -1, y: 0 });
-        tilt(&mut map, &input.1, &Pos { x: 0, y: 1 });
-        tilt(&mut map, &input.1, &Pos { x: 1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: -1 });
+        tilt(&mut map, &input.1, &IVec2 { x: -1, y: 0 });
+        tilt(&mut map, &input.1, &IVec2 { x: 0, y: 1 });
+        tilt(&mut map, &input.1, &IVec2 { x: 1, y: 0 });
         assert_eq!(map, map3);
     }
 }
