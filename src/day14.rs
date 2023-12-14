@@ -1,6 +1,7 @@
-use std::{collections::HashMap, fmt::Display};
+use std::fmt::Display;
 
 use aoc_runner_derive::{aoc, aoc_generator};
+use fxhash::FxHashMap;
 use itertools::Itertools;
 use tracing::info;
 
@@ -69,7 +70,7 @@ impl std::ops::SubAssign<&Pos> for Pos {
 // true == O
 // false == #
 // not found == .
-type T = (HashMap<Pos, bool>, Pos);
+type T = (FxHashMap<Pos, bool>, Pos);
 
 #[aoc_generator(day14)]
 #[tracing::instrument(skip(input))]
@@ -101,7 +102,7 @@ pub fn input_generator(input: &str) -> T {
                         )),
                         _ => unreachable!(),
                     })
-                    .collect::<HashMap<Pos, bool>>()
+                    .collect::<FxHashMap<Pos, bool>>()
             })
             .collect(),
         Pos { x, y },
@@ -109,16 +110,16 @@ pub fn input_generator(input: &str) -> T {
 }
 
 #[tracing::instrument(skip(input))]
-fn tilt(input: &mut HashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
+fn tilt(input: &mut FxHashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
     // all keys in the correct order
     let keys: Vec<_> = {
         match dir {
-            Pos { x, y } if *x == 1 && *y == 0 => ((0..=(dim.x - 1)).rev())
-                .cartesian_product(0..dim.y)
-                .collect(),
-            Pos { x, y } if *x == 0 && *y == 1 => ((0..=(dim.y - 1)).rev())
-                .cartesian_product(0..dim.x)
-                .collect(),
+            Pos { x, y } if *x == 1 && *y == 0 => {
+                ((0..dim.x).rev()).cartesian_product(0..dim.y).collect()
+            }
+            Pos { x, y } if *x == 0 && *y == 1 => {
+                ((0..dim.y).rev()).cartesian_product(0..dim.x).collect()
+            }
             Pos { x, y } if *x == -1 && *y == 0 => {
                 (0..=(dim.x - 1)).cartesian_product(0..dim.y).collect()
             }
@@ -167,7 +168,7 @@ fn tilt(input: &mut HashMap<Pos, bool>, dim: &Pos, dir: &Pos) {
 }
 
 #[tracing::instrument(skip(map))]
-fn score_map(map: &HashMap<Pos, bool>, hight: i64) -> u32 {
+fn score_map(map: &FxHashMap<Pos, bool>, hight: i64) -> u32 {
     map.iter()
         .filter_map(|(pos, val)| if !val { None } else { Some(hight - pos.y) })
         .sum::<i64>() as u32
@@ -187,7 +188,7 @@ pub fn part1(input: &T) -> u32 {
 pub fn part2(input: &T) -> u32 {
     let mut map = input.0.to_owned();
 
-    let map_to_key = |map: &HashMap<Pos, bool>| -> String {
+    let map_to_key = |map: &FxHashMap<Pos, bool>| -> String {
         let mut output = String::new();
         for y in 0..input.1.y {
             for x in 0..input.1.x {
@@ -202,7 +203,8 @@ pub fn part2(input: &T) -> u32 {
     };
 
     let max_rounds = 1_000_000_000;
-    let mut history: HashMap<String, (usize, u32)> = HashMap::new();
+    // let mut history: HashMap<String, (usize, u32)> = HashMap::new();
+    let mut history: FxHashMap<String, (usize, u32)> = FxHashMap::default();
     for idx in 0..max_rounds {
         // spin!
         tilt(&mut map, &input.1, &Pos { x: 0, y: -1 });
