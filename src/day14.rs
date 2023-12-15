@@ -20,26 +20,24 @@ pub fn input_generator(input: &str) -> T {
             .lines()
             .enumerate()
             .flat_map(|(y, line)| {
-                line.char_indices()
-                    .filter_map(|(x, c)| match c {
-                        '.' => None,
-                        'O' => Some((
-                            IVec2 {
-                                x: x as i32,
-                                y: y as i32,
-                            },
-                            true,
-                        )),
-                        '#' => Some((
-                            IVec2 {
-                                x: x as i32,
-                                y: y as i32,
-                            },
-                            false,
-                        )),
-                        _ => unreachable!(),
-                    })
-                    .collect::<FxHashMap<IVec2, bool>>()
+                line.char_indices().filter_map(move |(x, c)| match c {
+                    '.' => None,
+                    'O' => Some((
+                        IVec2 {
+                            x: x as i32,
+                            y: y as i32,
+                        },
+                        true,
+                    )),
+                    '#' => Some((
+                        IVec2 {
+                            x: x as i32,
+                            y: y as i32,
+                        },
+                        false,
+                    )),
+                    _ => unreachable!(),
+                })
             })
             .collect(),
         IVec2 { x, y },
@@ -58,10 +56,10 @@ fn tilt(input: &mut FxHashMap<IVec2, bool>, dim: &IVec2, dir: &IVec2) {
                 ((0..dim.y).rev()).cartesian_product(0..dim.x).collect()
             }
             IVec2 { x, y } if *x == -1 && *y == 0 => {
-                (0..=(dim.x - 1)).cartesian_product(0..dim.y).collect()
+                (0..dim.x).cartesian_product(0..dim.y).collect()
             }
             IVec2 { x, y } if *x == 0 && *y == -1 => {
-                (0..=(dim.y - 1)).cartesian_product(0..dim.x).collect()
+                (0..dim.y).cartesian_product(0..dim.x).collect()
             }
             _ => unreachable!(),
         }
