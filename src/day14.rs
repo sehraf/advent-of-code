@@ -138,7 +138,6 @@ pub fn part2(input: &T) -> u32 {
     };
 
     let max_rounds = 1_000_000_000;
-    // let mut history: HashMap<String, (usize, u32)> = HashMap::new();
     let mut history: FxHashMap<String, (usize, u32)> = FxHashMap::default();
     for idx in 0..max_rounds {
         // spin!

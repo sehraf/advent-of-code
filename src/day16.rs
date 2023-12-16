@@ -69,38 +69,16 @@ fn process_beam(map: &FxHashMap<IVec2, Tile>, dim: IVec2, start_beam: Beam) -> u
             match map.get(&beam.pos) {
                 None => beam.pos += beam.dir,
                 Some(tile) => match (tile, beam.dir) {
-                    (Tile::MirrorLeft, IVec2::X) => {
-                        beam.dir = IVec2::Y;
-                        beam.pos += IVec2::Y
-                    }
-                    (Tile::MirrorLeft, IVec2::Y) => {
-                        beam.dir = IVec2::X;
-                        beam.pos += IVec2::X
-                    }
-                    (Tile::MirrorLeft, IVec2::NEG_X) => {
-                        beam.dir = IVec2::NEG_Y;
-                        beam.pos += IVec2::NEG_Y
-                    }
-                    (Tile::MirrorLeft, IVec2::NEG_Y) => {
-                        beam.dir = IVec2::NEG_X;
-                        beam.pos += IVec2::NEG_X
+                    (Tile::MirrorLeft, IVec2 { x, y }) => {
+                        let step = IVec2 { x: y, y: x };
+                        beam.dir = step;
+                        beam.pos += step
                     }
 
-                    (Tile::MirrorRight, IVec2::X) => {
-                        beam.dir = IVec2::NEG_Y;
-                        beam.pos += IVec2::NEG_Y
-                    }
-                    (Tile::MirrorRight, IVec2::Y) => {
-                        beam.dir = IVec2::NEG_X;
-                        beam.pos += IVec2::NEG_X
-                    }
-                    (Tile::MirrorRight, IVec2::NEG_X) => {
-                        beam.dir = IVec2::Y;
-                        beam.pos += IVec2::Y
-                    }
-                    (Tile::MirrorRight, IVec2::NEG_Y) => {
-                        beam.dir = IVec2::X;
-                        beam.pos += IVec2::X
+                    (Tile::MirrorRight, IVec2 { x, y }) => {
+                        let step = IVec2 { x: -y, y: -x };
+                        beam.dir = step;
+                        beam.pos += step
                     }
 
                     (Tile::SplitterHorizontal, IVec2::X)
@@ -155,63 +133,24 @@ pub fn part2(input: &T) -> u32 {
     let map = &input.0;
     let dim = input.1;
 
-    let start_positions = [
-        Beam {
-            pos: IVec2 { x: 0, y: 0 },
-            dir: IVec2::X,
-        },
-        Beam {
-            pos: IVec2 { x: 0, y: 0 },
+    let start_positions = []
+        .into_iter()
+        .chain((0..dim.x).map(|x| Beam {
+            pos: IVec2 { x, y: 0 },
             dir: IVec2::Y,
-        },
-        Beam {
-            pos: IVec2 { x: dim.x - 1, y: 0 },
-            dir: IVec2::NEG_X,
-        },
-        Beam {
-            pos: IVec2 { x: dim.x - 1, y: 0 },
-            dir: IVec2::Y,
-        },
-        Beam {
-            pos: IVec2 { x: 0, y: dim.y - 1 },
+        }))
+        .chain((0..dim.x).map(|x| Beam {
+            pos: IVec2 { x, y: dim.y - 1 },
+            dir: IVec2::NEG_Y,
+        }))
+        .chain((0..dim.y).map(|y| Beam {
+            pos: IVec2 { x: 0, y },
             dir: IVec2::X,
-        },
-        Beam {
-            pos: IVec2 { x: 0, y: dim.y - 1 },
-            dir: IVec2::NEG_Y,
-        },
-        Beam {
-            pos: IVec2 {
-                x: dim.x - 1,
-                y: dim.y - 1,
-            },
+        }))
+        .chain((0..dim.y).map(|y| Beam {
+            pos: IVec2 { x: dim.x - 1, y },
             dir: IVec2::NEG_X,
-        },
-        Beam {
-            pos: IVec2 {
-                x: dim.x - 1,
-                y: dim.y - 1,
-            },
-            dir: IVec2::NEG_Y,
-        },
-    ]
-    .into_iter()
-    .chain((1..dim.x - 1).map(|x| Beam {
-        pos: IVec2 { x: x, y: 0 },
-        dir: IVec2::Y,
-    }))
-    .chain((1..dim.x - 1).map(|x| Beam {
-        pos: IVec2 { x: x, y: dim.y - 1 },
-        dir: IVec2::NEG_Y,
-    }))
-    .chain((1..dim.y - 1).map(|y| Beam {
-        pos: IVec2 { x: 0, y: y },
-        dir: IVec2::X,
-    }))
-    .chain((1..dim.y - 1).map(|y| Beam {
-        pos: IVec2 { x: dim.x - 1, y: y },
-        dir: IVec2::NEG_X,
-    }));
+        }));
 
     start_positions
         .map(|start_beam| process_beam(map, dim, start_beam))
