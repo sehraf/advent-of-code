@@ -35,10 +35,7 @@ pub fn input_generator(input: &str) -> T {
 #[tracing::instrument(skip(map))]
 fn find_path(map: &FxHashMap<IVec2, u32>, dim: &IVec2, part2: bool) -> u32 {
     let pos_start = IVec2::ZERO;
-    let pos_end = IVec2 {
-        x: dim.x - 1,
-        y: dim.y - 1,
-    };
+    let pos_end = *dim - IVec2::ONE;
 
     // heat_loss, position, direction (we went to or come from, doesn't really matter)
     let mut candidates: BTreeSet<(u32, [i32; 2], [i32; 2])> = BTreeSet::default();
@@ -73,7 +70,7 @@ fn find_path(map: &FxHashMap<IVec2, u32>, dim: &IVec2, part2: bool) -> u32 {
             if part2 {
                 const MIN_STEP: i32 = 4;
                 const MAX_STEP: i32 = 10;
-                // start at `1` and to to (inclusive) `10`
+                // start at `1` and go to (inclusive) `10`
                 for step in 1..=MAX_STEP {
                     new_pos += dir_new;
 
