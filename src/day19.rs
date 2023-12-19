@@ -2,7 +2,6 @@ use std::{collections::hash_map::Entry, ops::RangeInclusive};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use fxhash::FxHashMap;
-use tracing::info;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Field {
@@ -185,7 +184,6 @@ pub fn part1(input: &T) -> u32 {
                 }
             }
         })
-        .inspect(|part| info!("{part:?}"))
         .map(|part| part.added())
         .sum()
 }
@@ -203,13 +201,13 @@ pub fn part2(input: &T) -> u64 {
     while let Some((state, history)) = candidates.pop() {
         let rule = rules.get(state).unwrap();
         // we need to keep track of not applied rules
-        let mut anti_filer = vec![];
+        let mut anti_filter = vec![];
 
         for r in rule {
             // create current rule set
             let mut filter = history.to_owned();
             // append previous anti rules
-            filter.append(&mut anti_filer.to_owned());
+            filter.append(&mut anti_filter.to_owned());
 
             // update filter if rule it valid
             if r.valid {
@@ -238,7 +236,7 @@ pub fn part2(input: &T) -> u64 {
                     greater: !r.greater,
                     action: Action::Reject, // doesn't matter
                 };
-                anti_filer.push(anti);
+                anti_filter.push(anti);
             }
 
             match &r.action {
@@ -263,7 +261,7 @@ pub fn part2(input: &T) -> u64 {
             filter
         })
         // create ranges
-        .filter_map(|filter| {
+        .map(|filter| {
             let mut ranges: FxHashMap<Field, RangeInclusive<u32>> = FxHashMap::default();
             for (key, filter) in filter {
                 let mut range = 1..=4000;
@@ -284,7 +282,7 @@ pub fn part2(input: &T) -> u64 {
                     Entry::Vacant(vac) => _ = vac.insert(range),
                 }
             }
-            Some(ranges)
+            ranges
         })
         // count options
         .map(|mut ranges| {
