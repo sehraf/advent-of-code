@@ -2,7 +2,7 @@ use std::collections::{hash_map::Entry, VecDeque};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use fxhash::FxHashMap;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Debug, PartialEq, Clone)]
 
@@ -12,20 +12,20 @@ pub enum Signal {
 }
 
 pub trait HandleSignal {
-    fn add_receiver(&mut self, from: &str);
-    fn handle(&mut self, from: &str, signal: Signal) -> Option<(Signal, Vec<String>)>;
+    fn add_receiver(&mut self, from: &N);
+    fn handle(&mut self, from: &N, signal: Signal) -> Option<(Signal, Vec<N>)>;
 }
 
 #[derive(Debug, Clone)]
 pub struct FlipFlop {
     state: bool,
-    connected_to: Vec<String>,
+    connected_to: Vec<N>,
 }
 
 impl HandleSignal for FlipFlop {
-    fn add_receiver(&mut self, _from: &str) {}
+    fn add_receiver(&mut self, _from: &N) {}
 
-    fn handle(&mut self, _from: &str, signal: Signal) -> Option<(Signal, Vec<String>)> {
+    fn handle(&mut self, _from: &N, signal: Signal) -> Option<(Signal, Vec<N>)> {
         match signal {
             Signal::HighPulse => None,
             Signal::LowPulse => {
@@ -42,29 +42,29 @@ impl HandleSignal for FlipFlop {
 
 #[derive(Debug, Clone)]
 pub struct Broadcaster {
-    connected_to: Vec<String>,
+    connected_to: Vec<N>,
 }
 
 impl HandleSignal for Broadcaster {
-    fn add_receiver(&mut self, _from: &str) {}
+    fn add_receiver(&mut self, _from: &N) {}
 
-    fn handle(&mut self, _from: &str, signal: Signal) -> Option<(Signal, Vec<String>)> {
+    fn handle(&mut self, _from: &N, signal: Signal) -> Option<(Signal, Vec<N>)> {
         Some((signal, self.connected_to.to_owned()))
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
-    inputs: FxHashMap<String, Signal>,
-    connected_to: Vec<String>,
+    inputs: FxHashMap<N, Signal>,
+    connected_to: Vec<N>,
 }
 
 impl HandleSignal for Conjunction {
-    fn add_receiver(&mut self, from: &str) {
-        assert_eq!(self.inputs.insert(from.to_string(), Signal::LowPulse), None);
+    fn add_receiver(&mut self, from: &N) {
+        assert_eq!(self.inputs.insert(*from, Signal::LowPulse), None);
     }
 
-    fn handle(&mut self, from: &str, signal: Signal) -> Option<(Signal, Vec<String>)> {
+    fn handle(&mut self, from: &N, signal: Signal) -> Option<(Signal, Vec<N>)> {
         *self.inputs.get_mut(from).unwrap() = signal;
         if self.inputs.values().all(|s| *s == Signal::HighPulse) {
             Some((Signal::LowPulse, self.connected_to.to_owned()))
@@ -82,7 +82,7 @@ pub enum Node {
 }
 
 impl HandleSignal for Node {
-    fn add_receiver(&mut self, from: &str) {
+    fn add_receiver(&mut self, from: &N) {
         match self {
             Node::FlipFlop(f) => f.add_receiver(from),
             Node::Conjunction(c) => c.add_receiver(from),
@@ -90,7 +90,7 @@ impl HandleSignal for Node {
         }
     }
 
-    fn handle(&mut self, from: &str, signal: Signal) -> Option<(Signal, Vec<String>)> {
+    fn handle(&mut self, from: &N, signal: Signal) -> Option<(Signal, Vec<N>)> {
         match self {
             Node::FlipFlop(f) => f.handle(from, signal),
             Node::Conjunction(c) => c.handle(from, signal),
@@ -99,18 +99,34 @@ impl HandleSignal for Node {
     }
 }
 
-type T = FxHashMap<String, Node>;
+type N = u8;
+type T = FxHashMap<N, Node>;
 
 #[aoc_generator(day20)]
 #[tracing::instrument(skip(input))]
 pub fn input_generator(input: &str) -> T {
+    let mut mapping = FxHashMap::default();
+    mapping.insert(String::from("button"), 0);
+    mapping.insert(String::from("broadcaster"), 1);
+    mapping.insert(String::from("rx"), 2);
+    let mut last_id = 10;
+
+    let mut get_id = |s: String| -> N {
+        if let Some(id) = mapping.get(&s) {
+            return *id;
+        }
+        mapping.insert(s, last_id);
+        last_id += 1;
+        last_id - 1
+    };
+
     let mut nodes: T = input
         .lines()
         .map(|line| {
             let (a, b) = line.split_once("->").unwrap();
-            let a: &str = a.trim();
+            let a = a.trim();
 
-            let connected_to = b.split(',').map(|s| s.trim().to_string()).collect();
+            let connected_to = b.split(',').map(|s| get_id(s.trim().to_string())).collect();
             let node = match a {
                 "broadcaster" => Node::Broadcaster(Broadcaster { connected_to }),
                 flip if flip.starts_with("%") => Node::FlipFlop(FlipFlop {
@@ -131,7 +147,7 @@ pub fn input_generator(input: &str) -> T {
             }
             .to_string();
 
-            (a, node)
+            (get_id(a.to_string()), node)
         })
         .collect();
 
@@ -145,14 +161,14 @@ pub fn input_generator(input: &str) -> T {
             con if con.starts_with("&") => &con[1..],
             x => x,
         };
+        let from = get_id(from.to_string());
 
         to.split(',')
-            .map(|s| s.trim().to_string())
+            .map(|s| get_id(s.trim().to_string()))
             .for_each(|n| match nodes.entry(n) {
-                Entry::Occupied(mut occ) => occ.get_mut().add_receiver(from),
+                Entry::Occupied(mut occ) => occ.get_mut().add_receiver(&from),
                 Entry::Vacant(_vac) => {
                     // thanks AoC for having loose ends
-                    // rx goes here
                 }
             })
     });
@@ -164,11 +180,10 @@ fn push_button(state: &mut T) -> (u64, u64) {
     let mut cnt_low = 0;
     let mut cnt_high = 0;
 
-    let start_signal = (
-        Signal::LowPulse,
-        String::from("button"),
-        String::from("broadcaster"),
-    );
+    // mapping.insert("button", 0);
+    // mapping.insert("broadcaster", 1);
+    // mapping.insert("rx", 2);
+    let start_signal = (Signal::LowPulse, 0, 1);
     let mut signals = VecDeque::from([start_signal]);
 
     while let Some((signal, from, receiver)) = signals.pop_front() {
@@ -180,8 +195,8 @@ fn push_button(state: &mut T) -> (u64, u64) {
 
         // thanks AoC for having loose ends
         if !state.contains_key(&receiver) {
-            println!("{from} -{signal:?}-> {receiver}");
-            if receiver == "rx" && signal == Signal::LowPulse {
+            // println!("{from} -{signal:?}-> {receiver}");
+            if receiver == 2 && signal == Signal::LowPulse {
                 // yes I'm an adult
                 return (420, 69);
             }
