@@ -55,7 +55,7 @@ impl HandleSignal for Broadcaster {
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
-    inputs: FxHashMap<N, Signal>,
+    pub inputs: FxHashMap<N, Signal>,
     connected_to: Vec<N>,
 }
 
@@ -104,7 +104,7 @@ type T = FxHashMap<N, Node>;
 
 #[aoc_generator(day20)]
 #[tracing::instrument(skip(input))]
-pub fn input_generator(input: &str) -> T {
+pub fn input_generator(input: &str) -> (T, Vec<N>) {
     let mut mapping = FxHashMap::default();
     mapping.insert(String::from("button"), 0);
     mapping.insert(String::from("broadcaster"), 1);
@@ -169,67 +169,66 @@ pub fn input_generator(input: &str) -> T {
                 Entry::Occupied(mut occ) => occ.get_mut().add_receiver(&from),
                 Entry::Vacant(_vac) => {
                     // thanks AoC for having loose ends
+                    // rx goes here
                 }
             })
     });
 
-    nodes
-}
+    // part 2, get loop IDs
+    let loops = if !cfg!(test) {
+        let rx = &input
+            .lines()
+            .find(|line| line.ends_with("rx"))
+            .unwrap()
+            .split_ascii_whitespace()
+            .next()
+            .unwrap()[1..];
+        input
+            .lines()
+            .filter(|line| line.ends_with(rx))
+            .map(|line| &line.split_ascii_whitespace().next().unwrap()[1..])
+            .map(|id| get_id(id.to_string()))
+            .collect()
+    } else {
+        vec![]
+    };
 
-fn push_button(state: &mut T) -> (u64, u64) {
-    let mut cnt_low = 0;
-    let mut cnt_high = 0;
-
-    // mapping.insert("button", 0);
-    // mapping.insert("broadcaster", 1);
-    // mapping.insert("rx", 2);
-    let start_signal = (Signal::LowPulse, 0, 1);
-    let mut signals = VecDeque::from([start_signal]);
-
-    while let Some((signal, from, receiver)) = signals.pop_front() {
-        // info!("{from} -{signal:?}-> {receiver}");
-        match signal {
-            Signal::HighPulse => cnt_high += 1,
-            Signal::LowPulse => cnt_low += 1,
-        }
-
-        // thanks AoC for having loose ends
-        if !state.contains_key(&receiver) {
-            // println!("{from} -{signal:?}-> {receiver}");
-            if receiver == 2 && signal == Signal::LowPulse {
-                // yes I'm an adult
-                return (420, 69);
-            }
-            continue;
-        }
-
-        let node = state.get_mut(&receiver).unwrap();
-        let recv = node.handle(&from, signal);
-
-        match recv {
-            None => {}
-            Some(recv) => {
-                for r in recv.1 {
-                    signals.push_back((recv.0.to_owned(), receiver.to_owned(), r))
-                }
-            }
-        }
-    }
-
-    (cnt_low, cnt_high)
+    (nodes, loops)
 }
 
 #[aoc(day20, part1)]
 #[tracing::instrument(skip(input))]
-pub fn part1(input: &T) -> u64 {
-    let mut state = input.to_owned();
+pub fn part1(input: &(T, Vec<N>)) -> u64 {
+    let mut state = input.0.to_owned();
     let mut cnt_low = 0;
     let mut cnt_high = 0;
 
     for _i in 0..1000 {
-        let (l, h) = push_button(&mut state);
-        cnt_low += l;
-        cnt_high += h;
+        let start_signal = (Signal::LowPulse, 0, 1);
+        let mut signals = VecDeque::from([start_signal]);
+
+        while let Some((signal, from, receiver)) = signals.pop_front() {
+            match signal {
+                Signal::HighPulse => cnt_high += 1,
+                Signal::LowPulse => cnt_low += 1,
+            }
+
+            if !state.contains_key(&receiver) {
+                continue;
+            }
+
+            let node = state.get_mut(&receiver).unwrap();
+            let recv = node.handle(&from, signal);
+
+            match recv {
+                None => {}
+                Some(recv) => {
+                    for r in recv.1 {
+                        signals.push_back((recv.0.to_owned(), receiver.to_owned(), r))
+                    }
+                }
+            }
+        }
     }
 
     cnt_low * cnt_high
@@ -237,14 +236,47 @@ pub fn part1(input: &T) -> u64 {
 
 #[aoc(day20, part2)]
 #[tracing::instrument(skip(input))]
-pub fn part2(input: &T) -> u32 {
-    let mut state = input.to_owned();
+pub fn part2(input: &(T, Vec<N>)) -> u64 {
+    let mut state = input.0.to_owned();
+    let mut loops: FxHashMap<_, _> = input.1.iter().map(|id| (*id, 0)).collect();
 
-    for i in 1..u32::MAX {
-        let (l, h) = push_button(&mut state);
+    for i in 1.. {
+        let start_signal = (Signal::LowPulse, 0, 1);
+        let mut signals = VecDeque::from([start_signal]);
 
-        if l == 420 && h == 69 {
-            return i;
+        while let Some((signal, from, receiver)) = signals.pop_front() {
+            if !state.contains_key(&receiver) {
+                continue;
+            }
+
+            let node = state.get_mut(&receiver).unwrap();
+            let recv = node.handle(&from, signal);
+
+            match recv {
+                None => {}
+                Some(recv) => {
+                    let signal = recv.0;
+                    for r in recv.1 {
+                        signals.push_back((signal.to_owned(), receiver.to_owned(), r));
+
+                        // check loops
+                        if signal == Signal::LowPulse && loops.get(&r) == Some(&0) {
+                            loops.insert(r, i);
+                            if loops.values().all(|&v| v > 0) {
+                                let mut lcm = 1;
+                                for mut c in loops.values().copied() {
+                                    let d = lcm * c;
+                                    while c != 0 {
+                                        (lcm, c) = (c, lcm % c);
+                                    }
+                                    lcm = d / lcm;
+                                }
+                                return lcm;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
     unreachable!()
@@ -271,7 +303,6 @@ mod tests {
 &con -> output";
     #[test_log::test]
     fn test12() {
-        // 773115468 too low
         assert_eq!(part1(&input_generator(INPUT2)), 11687500);
     }
 }
