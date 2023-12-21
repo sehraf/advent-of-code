@@ -2,7 +2,6 @@ use std::collections::{hash_map::Entry, VecDeque};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use fxhash::FxHashMap;
-use tracing::{info, warn};
 
 #[derive(Debug, PartialEq, Clone)]
 
@@ -55,7 +54,7 @@ impl HandleSignal for Broadcaster {
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
-    pub inputs: FxHashMap<N, Signal>,
+    inputs: FxHashMap<N, Signal>,
     connected_to: Vec<N>,
 }
 
