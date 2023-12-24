@@ -15,7 +15,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 test-log = { version = "0.2", features = ["trace"] }
 fxhash = "0.2"
-glam = "0.24"
+glam = "0.25"
+z3 = "0.12"
 
 # rayon = "1.6"
 # ndarray = "0.15"
